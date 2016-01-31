@@ -30,6 +30,7 @@ extracted_data[,2]<-activity_labels[extracted_data[,2],2]
 cnames<-c("Activity","Subject.ID", as.character(features[extract_cols,2]))
 cnames<-gsub("-", ".", cnames)
 cnames<-gsub("^t", "Time.",cnames)
+cnames<-gsub("Acc", ".Acceleration", cnames)
 colnames(extracted_data)<-cnames
 
 tidy_data<-extracted_data %>%group_by(Subject.ID,Activity)%>%summarise_each(funs(mean))
