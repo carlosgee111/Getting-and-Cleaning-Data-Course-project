@@ -35,3 +35,12 @@ colnames(extracted_data)<-cnames
 
 tidy_data<-extracted_data %>%group_by(Subject.ID,Activity)%>%summarise_each(funs(mean))
 rm(activity_labels, extracted_data, features, extract_cols, cnames)
+
+write.table(tidy_data, "tidy data.txt", row.names = FALSE)
+##output written to tidy data.txt in working directory
+
+tidy_data
+##print out table
+##not sure what they really want to the output
+
+
