@@ -27,7 +27,10 @@ rm(Test_table, Train_table, full_data, mean_id, std_id)
 
 activity_labels<-read.table("UCI HAR Dataset/activity_labels.txt")
 extracted_data[,2]<-activity_labels[extracted_data[,2],2]
-colnames(extracted_data)<-c("Activity","Subject.ID", as.character(features[extract_cols,2]))
+cnames<-c("Activity","Subject.ID", as.character(features[extract_cols,2]))
+cnames<-gsub("-", ".", cnames)
+cnames<-gsub("^t", "Time.",cnames)
+colnames(extracted_data)<-cnames
 
 tidy_data<-extracted_data %>%group_by(Subject.ID,Activity)%>%summarise_each(funs(mean))
-rm(activity_labels, extracted_data, features, extract_cols)
+rm(activity_labels, extracted_data, features, extract_cols, cnames)
