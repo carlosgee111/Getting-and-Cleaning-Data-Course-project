@@ -1,46 +1,47 @@
-library(dplyr)
+##Read train and test data
+train_csv = read.csv("UCI HAR Dataset/train/X_train.txt", sep="", header=FALSE)
+train_csv[,562] = read.csv("UCI HAR Dataset/train/Y_train.txt", sep="", header=FALSE)
+train_csv[,563] = read.csv("UCI HAR Dataset/train/subject_train.txt", sep="", header=FALSE)
 
-X_test_table<-read.table("UCI HAR Dataset/test/X_test.txt",sep="")
-y_test_table<-read.table("UCI HAR Dataset/test/Y_test.txt",sep="")
-colnames(y_test_table)<-c("Activity ID")
-subject_test_table<-read.table("UCI HAR Dataset/test/subject_test.txt",sep="")
-colnames(subject_test_table)<-c("Subject ID")
-Test_table<-cbind(X_test_table,cbind(y_test_table,subject_test_table))
-rm(X_test_table,y_test_table, subject_test_table)
+test_csv = read.csv("UCI HAR Dataset/test/X_test.txt", sep="", header=FALSE)
+test_csv[,562] = read.csv("UCI HAR Dataset/test/Y_test.txt", sep="", header=FALSE)
+test_csv[,563] = read.csv("UCI HAR Dataset/test/subject_test.txt", sep="", header=FALSE)
 
-X_train_table<-read.table("UCI HAR Dataset/train/X_train.txt",sep="")
-y_train_table<-read.table("UCI HAR Dataset/train/Y_train.txt",sep="")
-colnames(y_train_table)<-c("Activity ID")
-subject_train_table<-read.table("UCI HAR Dataset/train/subject_train.txt",sep="")
-colnames(subject_train_table)<-c("Subject ID")
-Train_table<-cbind(X_train_table,cbind(y_train_table,subject_train_table))
-rm(X_train_table, y_train_table, subject_train_table)
+##Read labels and features and tidy
+act_labels_csv= read.csv("UCI HAR Dataset/activity_labels.txt", sep="", header=FALSE)
 
-full_data<- rbind(Test_table, Train_table)
+features_csv = read.csv("UCI HAR Dataset/features.txt", sep="", header=FALSE)
+features_csv[,2] = gsub('-mean', 'Mean', features_csv[,2])
+features_csv[,2] = gsub('-std', 'Std', features_csv[,2])
+features_csv[,2] = gsub('[-()]', '', features_csv[,2])
 
-features<-read.table("UCI HAR Dataset/features.txt", sep="")
-mean_id<-grep("mean()", features$V2)
-std_id<-grep("std()", features$V2)
-extract_cols<- sort(as.numeric(c(mean_id, std_id)))
-extracted_data<-full_data[,c(563,562, extract_cols)]
-rm(Test_table, Train_table, full_data, mean_id, std_id)
+#Merge data and extract mean and std
+target_cols<- grep(".*Mean.*|.*Std.*", features_csv[,2])
+features_csv<-features_csv[target_cols,]
 
-activity_labels<-read.table("UCI HAR Dataset/activity_labels.txt")
-extracted_data[,2]<-activity_labels[extracted_data[,2],2]
-cnames<-c("Activity","Subject.ID", as.character(features[extract_cols,2]))
-cnames<-gsub("-", ".", cnames)
-cnames<-gsub("^t", "Time.",cnames)
-cnames<-gsub("Acc", ".Acceleration", cnames)
-colnames(extracted_data)<-cnames
+#Add col for subject and activity
+target_cols<-c(target_cols, 562, 563)
 
-tidy_data<-extracted_data %>%group_by(Subject.ID,Activity)%>%summarise_each(funs(mean))
-rm(activity_labels, extracted_data, features, extract_cols, cnames)
+#Bind train and test and tidy data
 
-write.table(tidy_data, "tidy data.txt", row.names = FALSE)
-##output written to tidy data.txt in working directory
+complete_data = rbind(train_csv, test_csv)
+complete_data<- complete_data[,target_cols]
+colnames(complete_data)<- c(features_csv$V2, "Activity", "Subject")
+colnames(complete_data) <- tolower(colnames(complete_data))
 
-tidy_data
-##print out table
-##not sure what they really want to the output
+counter = 1
+for (label in act_labels_csv$V2) {
+  complete_data$activity <- gsub(counter, label, complete_data$activity)
+  counter <- counter + 1
+}
 
+complete_data$activity<- as.factor(complete_data$activity)
+complete_data$subject<- as.factor(complete_data$subject)
 
+tidy_data = aggregate(complete_data, by=list(activity = complete_data$activity, subject=complete_data$subject), mean)
+tidy_data[,89] = NULL
+tidy_data[,90] = NULL
+
+write.table(tidy_data, "tidy_data_table.txt", sep="\t")
+
+#All done 
